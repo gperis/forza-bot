@@ -1,7 +1,8 @@
-module github.com/gperis/forza-bot
+module forza-bot
 
 go 1.15
 
 require (
-	github.com/bwmarrin/discordgo v0.22.1
+	github.com/bwmarrin/discordgo v0.23.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
