@@ -1,8 +1,7 @@
 package main
 
 import (
-	"./bot"
-	"flag"
+	"github.com/gperis/forza-bot/pkg/bot"
 )
 
 func main() {

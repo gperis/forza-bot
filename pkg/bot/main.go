@@ -2,30 +2,34 @@ package bot
 
 import (
 	"fmt"
+	"github.com/gperis/forza-bot/pkg/config"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gperis/forza-bot/pkg/antiswear"
 )
 
-func init() {
-	flag.StringVar(&token, "t", "", "Bot Token")
-	flag.Parse()
+type conf struct {
+	Token string `mapstructure:"token"`
 }
 
-var token string
-var buffer = make([][]byte, 0)
+var moduleConf conf
+
+func init() {
+	config.Load("bot", &moduleConf)
+}
 
 // Start the bot
 func Start() {
-	if token == "" {
-		fmt.Println("No token provided. Please run: main -t <bot token>")
+	if moduleConf.Token == "" {
+		fmt.Println("No token provided. Please add one to the config file.")
 		return
 	}
 
 	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + token)
+	dg, err := discordgo.New("Bot " + moduleConf.Token)
 	if err != nil {
 		fmt.Println("Error creating Discord session: ", err)
 		return
@@ -52,12 +56,6 @@ func Start() {
 	dg.Close()
 }
 
-// This function will be called (due to AddHandler above) when the bot receives
-// the "ready" event from Discord.
-func ready(s *discordgo.Session, event *discordgo.Ready) {
-
-}
-
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -73,10 +71,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func initialiseModules(dg *discordgo.Session) {
-	// Register ready as a callback for the ready events.
-	dg.AddHandler(ready)
-
 	// Register messageCreate as a callback for the messageCreate events.
 	dg.AddHandler(messageCreate)
-	dg.AddHandler(AntiSwear)
+
+	antiswear.InitialiseModule(dg)
 }

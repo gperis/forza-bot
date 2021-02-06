@@ -3,53 +3,37 @@ package antiswear
 import (
 	"bufio"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
+	"github.com/gperis/forza-bot/pkg/config"
 	"log"
 	"os"
 	"strings"
-
-	"github.com/bwmarrin/discordgo"
-	"gopkg.in/yaml.v2"
 )
 
-type antiSwearConfig struct {
-	ListPath     string `yaml:"list_path"`
-	LogChannelID int    `yaml:"log_channel_id"`
+type conf struct {
+	ListPath     string `mapstructure:"list_path"`
+	LogChannelID string `mapstructure:"log_channel_id"`
 	Warnings     []struct {
-		Count   int    `yaml:"count"`
-		Message string `yaml:"message"`
-	} `yaml:"warnings"`
+		Count   int    `mapstructure:"count"`
+		Message string `mapstructure:"message"`
+	} `mapstructure:"warnings"`
 }
 
-func (BotModule) LoadModule() {
+var (
+	dictionary []string
+	moduleConf conf
+)
+
+func init() {
+	config.Load("antiswear", &moduleConf)
 	loadDictionary()
 }
 
-func loadDictionary() {
-	var config antiSwearConfig
-
-	err = yaml.Unmarshal("./config/antiswear.yaml", &config)
-	if err != nil {
-		panic(err)
-	}
-
-	f, err := os.OpenFile(config.ListPath, os.O_O_RDONLY, os.ModePerm)
-	if err != nil {
-		fmt.Println("Please double check that the profanity list is in the configured folder.")
-		return
-	}
-	defer f.Close()
-
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		_ = sc.Text() // GET the line string
-	}
-	if err := sc.Err(); err != nil {
-		log.Fatalf("scan file error: %v", err)
-		return
-	}
+func InitialiseModule(dg *discordgo.Session) {
+	dg.AddHandler(antiSwearHandler)
 }
 
-func startAntiSwear(s *discordgo.Session, m *discordgo.MessageCreate) {
+func antiSwearHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignore all messages created by the bot itself
 	// This isn't required in this specific example but it's a good practice.
 	if m.Author.ID == s.State.User.ID {
@@ -58,14 +42,42 @@ func startAntiSwear(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	contentSliced := strings.Fields(m.Content)
 	for _, word := range contentSliced {
-		for _, forbiddenWord := range swears {
+		for _, forbiddenWord := range dictionary {
 
 			// NOTE : change between Index and EqualFold to see the different result
 
 			if test := strings.Index(strings.ToLower(word), forbiddenWord); test > -1 {
+				// Delete the swear message
 				s.ChannelMessageDelete(m.ChannelID, m.ID)
-				s.ChannelMessageSend(m.ChannelID, "Message deleted")
+
+				logMessageEmbed := &discordgo.MessageEmbed{
+					Title: "Auto Moderation | Anti Swearing",
+					Description: fmt.Sprintf(
+						"<@!%s> (%s) sent a message containing swear word(s) in <#%s>.\n\nThe message:\n>>> %s",
+						m.Author.ID,
+						m.Author.ID,
+						m.ChannelID,
+						m.Content,
+					),
+				}
+
+				// Send notification to log channel
+				s.ChannelMessageSendEmbed(moduleConf.LogChannelID, logMessageEmbed)
 			}
 		}
+	}
+}
+
+func loadDictionary() {
+	d, err := os.Open(moduleConf.ListPath)
+
+	if err != nil {
+		log.Fatalf("Please double check that the profanity list is in the configured folder.")
+	}
+	defer d.Close()
+
+	scanner := bufio.NewScanner(d)
+	for scanner.Scan() {
+		dictionary = append(dictionary, scanner.Text())
 	}
 }

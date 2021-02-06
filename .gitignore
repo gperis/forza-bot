@@ -22,3 +22,5 @@ database/
 config/
 
 .*
+pkg/mod/
+pkg/sumdb/
