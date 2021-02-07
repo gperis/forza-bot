@@ -6,15 +6,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/gperis/forza-bot/pkg/config"
 	"github.com/gperis/forza-bot/pkg/database"
+	"github.com/gperis/forza-bot/pkg/discord_log"
 	"log"
 	"os"
 	"strings"
 )
 
 type conf struct {
-	ListPath     string `mapstructure:"list_path"`
-	LogChannelID string `mapstructure:"log_channel_id"`
-	Warnings     []struct {
+	ListPath string `mapstructure:"list_path"`
+	Warnings []struct {
 		Count   int    `mapstructure:"count"`
 		Message string `mapstructure:"message"`
 	} `mapstructure:"warnings"`
@@ -44,10 +44,10 @@ func initDb() {
 }
 
 func StartModule(dg *discordgo.Session) {
-	dg.AddHandler(antiSwearHandler)
+	dg.AddHandler(handler)
 }
 
-func antiSwearHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignore all messages created by the bot itself
 	// This isn't required in this specific example but it's a good practice.
 	if m.Author.ID == s.State.User.ID {
@@ -101,20 +101,17 @@ func logWarning(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	defer db.Close()
 
-	logMessageEmbed := &discordgo.MessageEmbed{
-		Title: "Auto Moderation | Anti Swearing",
-		Description: fmt.Sprintf(
+	discord_log.LogIncident(
+		s,
+		fmt.Sprintf(
 			"<@!%s> (%s) sent a message containing swear word(s) in <#%s>.\n\n**The message:**\n>>> %s",
 			m.Author.ID,
 			m.Author.ID,
 			m.ChannelID,
 			m.Content,
 		),
-		Color: 10038562,
-	}
-
-	// Send notification to log channel
-	s.ChannelMessageSendEmbed(moduleConf.LogChannelID, logMessageEmbed)
+		"Anti Swearing",
+	)
 }
 
 func sendWarningToUser(s *discordgo.Session, m *discordgo.MessageCreate) {

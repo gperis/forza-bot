@@ -3,6 +3,7 @@ package bot
 import (
 	"fmt"
 	"github.com/gperis/forza-bot/pkg/config"
+	"github.com/gperis/forza-bot/pkg/invitation_link"
 	"os"
 	"os/signal"
 	"syscall"
@@ -78,4 +79,5 @@ func startModules(dg *discordgo.Session) {
 	dg.AddHandler(pingHandler)
 
 	antiswear.StartModule(dg)
+	invitation_link.StartModule(dg)
 }
