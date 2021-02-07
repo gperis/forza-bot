@@ -21,18 +21,35 @@ func init() {
 	config.Load("bot", &moduleConf)
 }
 
-// Start the bot
 func Start() {
+	dg, done := authenticate()
+	if done {
+		return
+	}
+
+	startModules(dg)
+
+	fmt.Println("Forza Bot is now running.  Press CTRL-C to exit.")
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+
+	// Cleanly close down the Discord session.
+	dg.Close()
+}
+
+func authenticate() (*discordgo.Session, bool) {
 	if moduleConf.Token == "" {
 		fmt.Println("No token provided. Please add one to the config file.")
-		return
+		return nil, true
 	}
 
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + moduleConf.Token)
 	if err != nil {
 		fmt.Println("Error creating Discord session: ", err)
-		return
+		return nil, true
 	}
 
 	// In this example, we only care about receiving message events.
@@ -44,23 +61,10 @@ func Start() {
 		fmt.Println("Error opening Discord session: ", err)
 	}
 
-	initialiseModules(dg)
-
-	// Wait here until CTRL-C or other term signal is received.
-	fmt.Println("Forza Bot is now running.  Press CTRL-C to exit.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
-
-	// Cleanly close down the Discord session.
-	dg.Close()
+	return dg, false
 }
 
-// This function will be called (due to AddHandler above) every time a new
-// message is created on any channel that the autenticated bot has access to.
-func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Ignore all messages created by the bot itself
-	// This isn't required in this specific example but it's a good practice.
+func pingHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
@@ -70,9 +74,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func initialiseModules(dg *discordgo.Session) {
-	// Register messageCreate as a callback for the messageCreate events.
-	dg.AddHandler(messageCreate)
+func startModules(dg *discordgo.Session) {
+	dg.AddHandler(pingHandler)
 
-	antiswear.InitialiseModule(dg)
+	antiswear.StartModule(dg)
 }
