@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"github.com/gperis/forza-bot/pkg/antispam"
 	"github.com/gperis/forza-bot/pkg/config"
 	"github.com/gperis/forza-bot/pkg/invitation_link"
 	"os"
@@ -80,4 +81,5 @@ func startModules(dg *discordgo.Session) {
 
 	antiswear.StartModule(dg)
 	invitation_link.StartModule(dg)
+	antispam.StartModule(dg)
 }

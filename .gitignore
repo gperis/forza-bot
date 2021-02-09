@@ -24,3 +24,4 @@ config/
 .*
 pkg/mod/
 pkg/sumdb/
+bin/
