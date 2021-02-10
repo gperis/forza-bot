@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/gperis/forza-bot/pkg/admin"
 	"github.com/gperis/forza-bot/pkg/config"
 	"github.com/gperis/forza-bot/pkg/database"
 	"github.com/gperis/forza-bot/pkg/discord_log"
@@ -50,7 +51,7 @@ func StartModule(dg *discordgo.Session) {
 func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignore all messages created by the bot itself
 	// This isn't required in this specific example but it's a good practice.
-	if m.Author.ID == s.State.User.ID {
+	if m.Author.ID == s.State.User.ID || admin.IsStaffMember(m.Member) {
 		return
 	}
 

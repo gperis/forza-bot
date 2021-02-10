@@ -3,9 +3,9 @@ package antispam
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/gperis/forza-bot/pkg/admin"
 	"github.com/gperis/forza-bot/pkg/config"
 	"github.com/gperis/forza-bot/pkg/discord_log"
-	"log"
 	"strings"
 	"time"
 )
@@ -15,6 +15,7 @@ type conf struct {
 	WarningTimespan      int `mapstructure:"warning_timespan"`
 	BanWarningsCount     int `mapstructure:"ban_warnings_count"`
 	BanWarningsTimespan  int `mapstructure:"ban_warnings_timespan"`
+	BanDays              int `mapstructure:"ban_days"`
 }
 
 type userState struct {
@@ -23,25 +24,25 @@ type userState struct {
 	GuildID              string
 	Messages             []*discordgo.Message
 	LastMessageTimestamp time.Time
-	SpamWarningState     *spamWarningState
+	SpamWarningState     *warningState
 }
 
-type spamWarningState struct {
+type warningState struct {
 	Count                int
 	LastWarningTimestamp time.Time
 }
 
 var (
-	moduleConf        conf
-	userStates        []userState
-	spamWarningStates []spamWarningState
+	moduleConf    conf
+	userStates    []userState
+	warningStates []warningState
 )
 
 func init() {
 	config.Load("antispam", &moduleConf)
 
 	userStates = make([]userState, 1)
-	spamWarningStates = make([]spamWarningState, 1)
+	warningStates = make([]warningState, 1)
 }
 
 func StartModule(dg *discordgo.Session) {
@@ -51,7 +52,7 @@ func StartModule(dg *discordgo.Session) {
 }
 
 func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == s.State.User.ID {
+	if m.Author.ID == s.State.User.ID || admin.IsStaffMember(m.Member) {
 		return
 	}
 
@@ -134,6 +135,13 @@ func (us *userState) banUser(s *discordgo.Session) {
 		),
 		"Anti Spam",
 	)
+
+	s.GuildBanCreateWithReason(
+		us.GuildID,
+		us.UserID,
+		fmt.Sprintf("You have been banned from the server for %d days for violating the server rules.\n\n**Reason**:\n>>> Spamming", moduleConf.BanDays),
+		moduleConf.BanDays,
+	)
 }
 
 func getUserState(UserID string, ChannelID string) *userState {
@@ -148,7 +156,7 @@ func getUserState(UserID string, ChannelID string) *userState {
 		ChannelID:            ChannelID,
 		Messages:             nil,
 		LastMessageTimestamp: time.Now(),
-		SpamWarningState:     &spamWarningState{},
+		SpamWarningState:     &warningState{},
 	}
 
 	userStates = append(userStates, newUserState)
@@ -159,7 +167,7 @@ func getUserState(UserID string, ChannelID string) *userState {
 func cleanup() {
 	for {
 		time.Sleep(60 * time.Second)
-		log.Print("Doing some cleanup")
+
 		for i, s := range userStates {
 			if s.SpamWarningState != nil &&
 				s.SpamWarningState.Count > 0 &&
@@ -168,7 +176,6 @@ func cleanup() {
 			}
 
 			if time.Since(s.LastMessageTimestamp).Seconds() >= 80 && i+1 < len(userStates) {
-				log.Printf("Removed index: %d", i)
 				userStates = removeState(userStates, i)
 			}
 		}

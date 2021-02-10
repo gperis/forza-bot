@@ -3,6 +3,7 @@ package invitation_link
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/gperis/forza-bot/pkg/admin"
 	"github.com/gperis/forza-bot/pkg/discord_log"
 	"mvdan.cc/xurls/v2"
 	"net/http"
@@ -15,7 +16,7 @@ func StartModule(dg *discordgo.Session) {
 }
 
 func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == s.State.User.ID {
+	if m.Author.ID == s.State.User.ID || admin.IsStaffMember(m.Member) {
 		return
 	}
 
