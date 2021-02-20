@@ -19,7 +19,7 @@ func LogIncident(s *discordgo.Session, message string, moduleName string) {
 	logMessageEmbed := &discordgo.MessageEmbed{
 		Title:       "Auto Moderation | " + moduleName,
 		Description: message,
-		Color:       10038562,
+		Color:       12386317,
 	}
 
 	s.ChannelMessageSendEmbed(moduleConf.LogChannelID, logMessageEmbed)

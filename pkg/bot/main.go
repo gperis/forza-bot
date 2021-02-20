@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/gperis/forza-bot/pkg/antimention"
 	"github.com/gperis/forza-bot/pkg/antispam"
+	"github.com/gperis/forza-bot/pkg/antiswear"
+	"github.com/gperis/forza-bot/pkg/commands"
 	"github.com/gperis/forza-bot/pkg/config"
 	"github.com/gperis/forza-bot/pkg/invitation_link"
 	"os"
@@ -11,7 +13,6 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gperis/forza-bot/pkg/antiswear"
 )
 
 type conf struct {
@@ -84,4 +85,6 @@ func startModules(dg *discordgo.Session) {
 	invitation_link.StartModule(dg)
 	antispam.StartModule(dg)
 	antimention.StartModule(dg)
+
+	commands.StartModule(dg)
 }

@@ -54,8 +54,12 @@ func StartModule(dg *discordgo.Session) {
 }
 
 func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	mentionsCount := len(m.Mentions)
-	if m.Author.ID == s.State.User.ID || mentionsCount == 0 || admin.IsStaffMember(m.Member) {
+	mentionsCount := strings.Count(m.Content, "<@!")
+
+	if m.Author.ID == s.State.User.ID ||
+		mentionsCount == 0 ||
+		admin.IsStaffMember(m.Member) ||
+		m.Author.Bot == true {
 		return
 	}
 
@@ -87,7 +91,7 @@ func (us *userState) showWarning(s *discordgo.Session) {
 	warningEmbed := &discordgo.MessageEmbed{
 		Title:       "Auto Moderation",
 		Description: "Please refrain from making so many mentions. Repeating this action will lead to consequences.",
-		Color:       10038562,
+		Color:       12386317,
 	}
 
 	s.ChannelMessageSendEmbed(us.ChannelID, warningEmbed)
@@ -125,7 +129,7 @@ func (us *userState) banUser(s *discordgo.Session, instantBan bool) {
 				"\n\n**Reason:**\n>>> Spamming, excessive mentioning",
 			us.UserID,
 		),
-		Color: 10038562,
+		Color: 12386317,
 	}
 
 	s.ChannelMessageSendEmbed(us.ChannelID, banMessageEmbed)
@@ -154,12 +158,14 @@ func (us *userState) banUser(s *discordgo.Session, instantBan bool) {
 		"Anti Spam",
 	)
 
-	s.GuildBanCreateWithReason(
-		us.GuildID,
-		us.UserID,
-		fmt.Sprintf("You have been banned from the server for %d days for violating the server rules.\n\n**Reason**:\n>>> Spamming, excessive mentioning", moduleConf.BanDays),
-		moduleConf.BanDays,
-	)
+	if admin.IsDevelopment() != true {
+		s.GuildBanCreateWithReason(
+			us.GuildID,
+			us.UserID,
+			fmt.Sprintf("You have been banned from the server for %d days for violating the server rules.\n\n**Reason**:\n>>> Spamming, excessive mentioning", moduleConf.BanDays),
+			moduleConf.BanDays,
+		)
+	}
 }
 
 func getUserState(UserID string, ChannelID string) *userState {

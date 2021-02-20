@@ -48,7 +48,7 @@ func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			userWarningEmbed := &discordgo.MessageEmbed{
 				Title:       "Auto Moderation",
 				Description: "Please refrain from sharing Discord invitation links in the server. Repeating this action will lead to consequences.",
-				Color:       10038562,
+				Color:       12386317,
 			}
 
 			s.ChannelMessageSendEmbed(m.ChannelID, userWarningEmbed)

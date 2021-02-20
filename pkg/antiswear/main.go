@@ -51,7 +51,7 @@ func StartModule(dg *discordgo.Session) {
 func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignore all messages created by the bot itself
 	// This isn't required in this specific example but it's a good practice.
-	if m.Author.ID == s.State.User.ID || admin.IsStaffMember(m.Member) {
+	if m.Author.ID == s.State.User.ID || admin.IsStaffMember(m.Member) || m.Author.Bot == true {
 		return
 	}
 
@@ -125,7 +125,7 @@ func sendWarningToUser(s *discordgo.Session, m *discordgo.MessageCreate) {
 	privateMessageEmbed := &discordgo.MessageEmbed{
 		Title:       "Auto Moderation",
 		Description: getWarningMessageForUser(m.Author.ID),
-		Color:       10038562,
+		Color:       12386317,
 	}
 
 	s.ChannelMessageSendEmbed(privateChannel.ID, privateMessageEmbed)

@@ -6,6 +6,7 @@ import (
 )
 
 type conf struct {
+	Mode       string   `mapstructure:"mode"`
 	StaffRoles []string `mapstructure:"staff_roles"`
 }
 
@@ -16,6 +17,10 @@ func init() {
 }
 
 func IsStaffMember(member *discordgo.Member) bool {
+	if member == nil || len(member.Roles) == 0 {
+		return false
+	}
+
 	for _, memberRole := range member.Roles {
 		for _, staffRole := range moduleConf.StaffRoles {
 			if memberRole == staffRole {
@@ -24,5 +29,9 @@ func IsStaffMember(member *discordgo.Member) bool {
 		}
 	}
 
+	return false
+}
+
+func IsDevelopment() bool {
 	return false
 }

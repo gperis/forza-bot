@@ -52,7 +52,9 @@ func StartModule(dg *discordgo.Session) {
 }
 
 func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == s.State.User.ID || admin.IsStaffMember(m.Member) {
+	if m.Author.ID == s.State.User.ID ||
+		admin.IsStaffMember(m.Member) ||
+		m.Author.Bot == true {
 		return
 	}
 
@@ -84,7 +86,7 @@ func (us *userState) activateAntiSpam(s *discordgo.Session) {
 	warningEmbed := &discordgo.MessageEmbed{
 		Title:       "Auto Moderation",
 		Description: "Please refrain from sending so many messages so frequently. Repeating this action will lead to consequences.",
-		Color:       10038562,
+		Color:       12386317,
 	}
 
 	s.ChannelMessageSendEmbed(us.ChannelID, warningEmbed)
@@ -119,7 +121,7 @@ func (us *userState) banUser(s *discordgo.Session) {
 			"<@!%s> has been banned from the server by automatic moderation due to violating server rules.\n\n**Reason:**\n>>> Spamming",
 			us.UserID,
 		),
-		Color: 10038562,
+		Color: 12386317,
 	}
 
 	s.ChannelMessageSendEmbed(us.ChannelID, banMessageEmbed)
@@ -136,12 +138,14 @@ func (us *userState) banUser(s *discordgo.Session) {
 		"Anti Spam",
 	)
 
-	s.GuildBanCreateWithReason(
-		us.GuildID,
-		us.UserID,
-		fmt.Sprintf("You have been banned from the server for %d days for violating the server rules.\n\n**Reason**:\n>>> Spamming", moduleConf.BanDays),
-		moduleConf.BanDays,
-	)
+	if admin.IsDevelopment() != true {
+		s.GuildBanCreateWithReason(
+			us.GuildID,
+			us.UserID,
+			fmt.Sprintf("You have been banned from the server for %d days for violating the server rules.\n\n**Reason**:\n>>> Spamming", moduleConf.BanDays),
+			moduleConf.BanDays,
+		)
+	}
 }
 
 func getUserState(UserID string, ChannelID string) *userState {
