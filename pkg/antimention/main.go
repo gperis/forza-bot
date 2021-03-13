@@ -2,12 +2,13 @@ package antimention
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/gperis/forza-bot/pkg/admin"
 	"github.com/gperis/forza-bot/pkg/config"
 	"github.com/gperis/forza-bot/pkg/discord_log"
-	"strings"
-	"time"
 )
 
 type conf struct {
@@ -48,8 +49,6 @@ func init() {
 }
 
 func StartModule(dg *discordgo.Session) {
-	go cleanup()
-
 	dg.AddHandler(handler)
 }
 
@@ -116,7 +115,7 @@ func (us *userState) showWarning(s *discordgo.Session) {
 	}
 
 	us.MentionsCount = 0
-	us.Messages = nil
+	us.Messages = make([]*discordgo.Message, 0)
 	us.WarningState.Count++
 	us.WarningState.LastWarningTimestamp = time.Now()
 }
@@ -179,34 +178,11 @@ func getUserState(UserID string, ChannelID string) *userState {
 		UserID:               UserID,
 		ChannelID:            ChannelID,
 		LastMessageTimestamp: time.Now(),
+		Messages:             make([]*discordgo.Message, 0),
 		WarningState:         &warningState{},
 	}
 
 	userStates = append(userStates, newUserState)
 
 	return &userStates[len(userStates)-1]
-}
-
-func cleanup() {
-	for {
-		time.Sleep(60 * time.Second)
-
-		for i, s := range userStates {
-			if s.WarningState != nil &&
-				s.WarningState.Count > 0 &&
-				time.Since(s.WarningState.LastWarningTimestamp).Seconds() < float64(moduleConf.BanWarningsTimespan) {
-				continue
-			}
-
-			if time.Since(s.LastMessageTimestamp).Seconds() >= 80 && i+1 < len(userStates) {
-				userStates = removeState(userStates, i)
-			}
-		}
-	}
-}
-
-func removeState(s []userState, i int) []userState {
-	s[i] = s[len(s)-1]
-	// We do not need to put s[i] at the end, as it will be discarded anyway
-	return s[:len(s)-1]
 }

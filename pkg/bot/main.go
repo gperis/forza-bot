@@ -2,15 +2,16 @@ package bot
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/gperis/forza-bot/pkg/antimention"
 	"github.com/gperis/forza-bot/pkg/antispam"
 	"github.com/gperis/forza-bot/pkg/antiswear"
 	"github.com/gperis/forza-bot/pkg/commands"
 	"github.com/gperis/forza-bot/pkg/config"
 	"github.com/gperis/forza-bot/pkg/invitation_link"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -56,8 +57,7 @@ func authenticate() (*discordgo.Session, bool) {
 		return nil, true
 	}
 
-	// In this example, we only care about receiving message events.
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildMessageReactions | discordgo.IntentsGuildBans
 
 	// Open the websocket and begin listening.
 	err = dg.Open()
@@ -81,10 +81,13 @@ func pingHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 func startModules(dg *discordgo.Session) {
 	dg.AddHandler(pingHandler)
 
+	// Moderation modules
 	antiswear.StartModule(dg)
 	invitation_link.StartModule(dg)
 	antispam.StartModule(dg)
 	antimention.StartModule(dg)
+	// welcomer.StartModule(dg)
 
+	// Helpful commands
 	commands.StartModule(dg)
 }

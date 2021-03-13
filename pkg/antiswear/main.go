@@ -3,22 +3,18 @@ package antiswear
 import (
 	"bufio"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/gperis/forza-bot/pkg/admin"
-	"github.com/gperis/forza-bot/pkg/config"
-	"github.com/gperis/forza-bot/pkg/database"
-	"github.com/gperis/forza-bot/pkg/discord_log"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/gperis/forza-bot/pkg/admin"
+	"github.com/gperis/forza-bot/pkg/config"
+	"github.com/gperis/forza-bot/pkg/discord_log"
 )
 
 type conf struct {
 	ListPath string `mapstructure:"list_path"`
-	Warnings []struct {
-		Count   int    `mapstructure:"count"`
-		Message string `mapstructure:"message"`
-	} `mapstructure:"warnings"`
 }
 
 var (
@@ -28,20 +24,7 @@ var (
 
 func init() {
 	config.Load("antiswear", &moduleConf)
-	initDb()
 	loadDictionary()
-}
-
-func initDb() {
-	db := database.OpenDatabase()
-	stmt := "CREATE TABLE IF NOT EXISTS antiswear_count (`UserID` integer not null primary key, `Count` integer);"
-
-	_, err := db.Exec(stmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, stmt)
-		return
-	}
-	defer db.Close()
 }
 
 func StartModule(dg *discordgo.Session) {
@@ -49,8 +32,6 @@ func StartModule(dg *discordgo.Session) {
 }
 
 func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Ignore all messages created by the bot itself
-	// This isn't required in this specific example but it's a good practice.
 	if m.Author.ID == s.State.User.ID || admin.IsStaffMember(m.Member) || m.Author.Bot == true {
 		return
 	}
@@ -59,10 +40,7 @@ func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for _, word := range contentSliced {
 		for _, forbiddenWord := range dictionary {
 
-			// NOTE : change between Index and EqualFold to see the different result
-
-			if test := strings.Index(strings.ToLower(word), forbiddenWord); test > -1 {
-				// Delete the swear message
+			if strings.Index(strings.ToLower(word), forbiddenWord) > -1 {
 				s.ChannelMessageDelete(m.ChannelID, m.ID)
 
 				sendWarningToUser(s, m)
@@ -73,35 +51,6 @@ func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func logWarning(s *discordgo.Session, m *discordgo.MessageCreate) {
-	db := database.OpenDatabase()
-
-	tx, err := db.Begin()
-
-	if err != nil {
-		log.Printf("%q: %s\n", err)
-	}
-
-	stmt, err := tx.Prepare("INSERT OR REPLACE INTO antiswear_count(`UserID`, `Count`) values(?, ?)")
-
-	if err != nil {
-		log.Printf("%q: %s\n", err, stmt)
-	}
-
-	defer stmt.Close()
-
-	userCount := getUserWarningCount(m.Author.ID) + 1
-
-	_, err = stmt.Exec(m.Author.ID, userCount)
-
-	if err != nil {
-		tx.Rollback()
-		return
-	}
-
-	tx.Commit()
-
-	defer db.Close()
-
 	discord_log.LogIncident(
 		s,
 		fmt.Sprintf(
@@ -124,45 +73,11 @@ func sendWarningToUser(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	privateMessageEmbed := &discordgo.MessageEmbed{
 		Title:       "Auto Moderation",
-		Description: getWarningMessageForUser(m.Author.ID),
+		Description: "Please refrain from swearing as that's against the server rules. Repeating this action may lead to consequences.",
 		Color:       12386317,
 	}
 
 	s.ChannelMessageSendEmbed(privateChannel.ID, privateMessageEmbed)
-}
-
-func getWarningMessageForUser(id string) string {
-	var messageToSend string
-
-	userCount := getUserWarningCount(id)
-
-	for _, warning := range moduleConf.Warnings {
-		if userCount >= warning.Count {
-			messageToSend = warning.Message
-		}
-	}
-
-	return messageToSend
-}
-
-func getUserWarningCount(id string) int {
-	var userCount int
-
-	db := database.OpenDatabase()
-
-	stmt, err := db.Prepare("SELECT `Count` FROM antiswear_count WHERE `UserID` = ?")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
-
-	err = stmt.QueryRow(id).Scan(&userCount)
-
-	if err != nil {
-		userCount = 0
-	}
-
-	return userCount
 }
 
 func loadDictionary() {

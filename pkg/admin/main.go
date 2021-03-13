@@ -33,5 +33,5 @@ func IsStaffMember(member *discordgo.Member) bool {
 }
 
 func IsDevelopment() bool {
-	return false
+	return true
 }

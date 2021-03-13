@@ -2,12 +2,13 @@ package antispam
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/gperis/forza-bot/pkg/admin"
 	"github.com/gperis/forza-bot/pkg/config"
 	"github.com/gperis/forza-bot/pkg/discord_log"
-	"strings"
-	"time"
 )
 
 type conf struct {
@@ -46,8 +47,6 @@ func init() {
 }
 
 func StartModule(dg *discordgo.Session) {
-	go cleanup()
-
 	dg.AddHandler(handler)
 }
 
@@ -74,14 +73,7 @@ func handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func (us *userState) activateAntiSpam(s *discordgo.Session) {
-	var messagesText []string
-
-	for _, m := range us.Messages {
-		messagesText = append(messagesText, m.Content)
-		s.ChannelMessageDelete(m.ChannelID, m.ID)
-	}
-
-	us.Messages = nil
+	go us.removeMessages(s)
 
 	warningEmbed := &discordgo.MessageEmbed{
 		Title:       "Auto Moderation",
@@ -90,6 +82,23 @@ func (us *userState) activateAntiSpam(s *discordgo.Session) {
 	}
 
 	s.ChannelMessageSendEmbed(us.ChannelID, warningEmbed)
+
+	if us.SpamWarningState.Count > moduleConf.BanWarningsCount {
+		us.banUser(s)
+		return
+	}
+
+	us.SpamWarningState.Count++
+	us.SpamWarningState.LastWarningTimestamp = time.Now()
+}
+
+func (us *userState) removeMessages(s *discordgo.Session) {
+	var messagesText []string
+
+	for _, m := range us.Messages {
+		messagesText = append(messagesText, m.Content)
+		go s.ChannelMessageDelete(m.ChannelID, m.ID)
+	}
 
 	discord_log.LogIncident(
 		s,
@@ -105,13 +114,7 @@ func (us *userState) activateAntiSpam(s *discordgo.Session) {
 		"Anti Spam",
 	)
 
-	if us.SpamWarningState.Count > moduleConf.BanWarningsCount {
-		us.banUser(s)
-		return
-	}
-
-	us.SpamWarningState.Count++
-	us.SpamWarningState.LastWarningTimestamp = time.Now()
+	us.Messages = make([]*discordgo.Message, 0)
 }
 
 func (us *userState) banUser(s *discordgo.Session) {
@@ -158,7 +161,7 @@ func getUserState(UserID string, ChannelID string) *userState {
 	newUserState := userState{
 		UserID:               UserID,
 		ChannelID:            ChannelID,
-		Messages:             nil,
+		Messages:             make([]*discordgo.Message, 0),
 		LastMessageTimestamp: time.Now(),
 		SpamWarningState:     &warningState{},
 	}
@@ -166,28 +169,4 @@ func getUserState(UserID string, ChannelID string) *userState {
 	userStates = append(userStates, newUserState)
 
 	return &userStates[len(userStates)-1]
-}
-
-func cleanup() {
-	for {
-		time.Sleep(60 * time.Second)
-
-		for i, s := range userStates {
-			if s.SpamWarningState != nil &&
-				s.SpamWarningState.Count > 0 &&
-				time.Since(s.SpamWarningState.LastWarningTimestamp).Seconds() < float64(moduleConf.BanWarningsTimespan) {
-				continue
-			}
-
-			if time.Since(s.LastMessageTimestamp).Seconds() >= 80 && i+1 < len(userStates) {
-				userStates = removeState(userStates, i)
-			}
-		}
-	}
-}
-
-func removeState(s []userState, i int) []userState {
-	s[i] = s[len(s)-1]
-	// We do not need to put s[i] at the end, as it will be discarded anyway
-	return s[:len(s)-1]
 }
