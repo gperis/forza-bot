@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gperis/forza-bot/pkg/admin"
-	"github.com/gperis/forza-bot/pkg/config"
-	"github.com/gperis/forza-bot/pkg/discord_log"
+	"github.com/gperis/forza-bot/src/admin"
+	"github.com/gperis/forza-bot/src/config"
+	"github.com/gperis/forza-bot/src/discord_log"
 )
 
 type conf struct {

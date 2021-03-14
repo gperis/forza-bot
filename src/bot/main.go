@@ -6,12 +6,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gperis/forza-bot/pkg/antimention"
-	"github.com/gperis/forza-bot/pkg/antispam"
-	"github.com/gperis/forza-bot/pkg/antiswear"
-	"github.com/gperis/forza-bot/pkg/commands"
-	"github.com/gperis/forza-bot/pkg/config"
-	"github.com/gperis/forza-bot/pkg/invitation_link"
+	"github.com/gperis/forza-bot/src/antimention"
+	"github.com/gperis/forza-bot/src/antispam"
+	"github.com/gperis/forza-bot/src/antiswear"
+	"github.com/gperis/forza-bot/src/commands"
+	"github.com/gperis/forza-bot/src/config"
+	"github.com/gperis/forza-bot/src/invitation_link"
 
 	"github.com/bwmarrin/discordgo"
 )

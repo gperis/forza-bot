@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gperis/forza-bot/pkg/config"
+	"github.com/gperis/forza-bot/src/config"
 )
 
 type conf struct {

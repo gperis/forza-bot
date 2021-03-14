@@ -2,13 +2,14 @@ package invitation_link
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/gperis/forza-bot/pkg/admin"
-	"github.com/gperis/forza-bot/pkg/discord_log"
-	"mvdan.cc/xurls/v2"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/gperis/forza-bot/src/admin"
+	"github.com/gperis/forza-bot/src/discord_log"
+	"mvdan.cc/xurls/v2"
 )
 
 func StartModule(dg *discordgo.Session) {

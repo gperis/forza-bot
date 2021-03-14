@@ -18,10 +18,10 @@
 
 vendor/
 
-database/
-config/
+/database/
+/config/
 
 .*
-pkg/mod/
-pkg/sumdb/
+mod/
+sumdb/
 bin/

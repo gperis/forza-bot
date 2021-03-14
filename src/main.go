@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/gperis/forza-bot/pkg/bot"
+	"github.com/gperis/forza-bot/src/bot"
 )
 
 func main() {

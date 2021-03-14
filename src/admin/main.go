@@ -2,7 +2,7 @@ package admin
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/gperis/forza-bot/pkg/config"
+	"github.com/gperis/forza-bot/src/config"
 )
 
 type conf struct {
@@ -33,5 +33,5 @@ func IsStaffMember(member *discordgo.Member) bool {
 }
 
 func IsDevelopment() bool {
-	return true
+	return moduleConf.Mode == "development"
 }
