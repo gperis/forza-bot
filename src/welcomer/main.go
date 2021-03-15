@@ -12,6 +12,7 @@ type conf struct {
 	InfoChannelID      string `mapstructure:"info_channel_id"`
 	RulesChannelID     string `mapstructure:"rules_channel_id"`
 	ImageURL           string `mapstructure:"image_url"`
+	NewJoinerRole      string `mapstructure:"new_joiner_role"`
 }
 
 var moduleConf conf

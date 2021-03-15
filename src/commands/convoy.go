@@ -5,34 +5,11 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gperis/forza-bot/src/config"
 )
-
-type conf struct {
-	ConvoyConfig struct {
-		OrderTrigger     string   `mapstructure:"order_trigger"`
-		FinishTrigger    string   `mapstructure:"finish_trigger"`
-		MessageChannelID string   `mapstructure:"message_channel_id"`
-		WhitelistRoles   []string `mapstructure:"whitelist_roles"`
-	} `mapstructure:"convoy"`
-}
-
-var (
-	commandsConfig conf
-)
-
-func init() {
-	config.Load("commands", &commandsConfig)
-}
-
-func StartModule(dg *discordgo.Session) {
-	dg.AddHandler(orderHandler)
-	dg.AddHandler(finishHandler)
-}
 
 func orderHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID ||
-		!isAllowedToUse(m.Member) ||
+		!isAllowedToUse(m.Member, commandsConfig.ConvoyConfig.WhitelistRoles) ||
 		!strings.Contains(m.Content, commandsConfig.ConvoyConfig.OrderTrigger) {
 		return
 	}
@@ -58,7 +35,7 @@ func orderHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func finishHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID ||
-		!isAllowedToUse(m.Member) ||
+		!isAllowedToUse(m.Member, commandsConfig.ConvoyConfig.WhitelistRoles) ||
 		!strings.Contains(m.Content, commandsConfig.ConvoyConfig.FinishTrigger) {
 		return
 	}
@@ -71,18 +48,4 @@ func finishHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	s.ChannelMessageSendEmbed(commandsConfig.ConvoyConfig.MessageChannelID, messageEmbed)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
-}
-
-func isAllowedToUse(member *discordgo.Member) bool {
-	if member != nil && member.Roles != nil {
-		for _, role := range commandsConfig.ConvoyConfig.WhitelistRoles {
-			for _, memberRole := range member.Roles {
-				if role == memberRole {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
 }
